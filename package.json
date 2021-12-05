@@ -1,0 +1,30 @@
+{
+  "name": "transmission",
+  "version": "1.0.0",
+  "description": "sync files to TencentCOS",
+  "main": "main.js",
+  "bin": {
+    "tx": "./src/main.js"
+  },
+  "author": "SecretCastle",
+  "license": "ISC",
+  "dependencies": {
+    "cos-nodejs-sdk-v5": "^2.11.4"
+  },
+  "devDependencies": {
+    "commander": "^8.3.0",
+    "inquirer": "^8.2.0",
+    "ora": "^6.0.1"
+  },
+  "directories": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SecretCastle/transmission.git"
+  },
+  "bugs": {
+    "url": "https://github.com/SecretCastle/transmission/issues"
+  },
+  "homepage": "https://github.com/SecretCastle/transmission#readme"
+}

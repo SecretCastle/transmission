@@ -2,7 +2,7 @@
  * @author SecretCastle
  * @email henrychen9314@gmail.com
  * @create date 2021-12-04 23:03:49
- * @modify date 2021-12-05 19:24:43
+ * @modify date 2021-12-06 23:02:38
  * @desc 静态常量存储
  */
 
@@ -38,9 +38,12 @@ Region=ap-nanjing
 StorageClass=STANDARD_IA
 `
 
+const LOOP_IGNORE = ['.tx', '.DS_Store', '.markeditor', '.Archive']
+
 module.exports = {
     CONFIG_PARAMETERS,
     LOCAL_CACHE_FOLDER_NAME,
     LOCAL_CACHE_CONFIG_FILE_NAME,
-    defaultConfigFileContent
+    defaultConfigFileContent,
+    LOOP_IGNORE
 }

@@ -4,7 +4,7 @@
  * @author SecretCastle
  * @email henrychen9314@gmail.com
  * @create date 2021-12-04 22:55:44
- * @modify date 2021-12-05 23:08:45
+ * @modify date 2021-12-06 23:38:26
  * @desc sync files to TencentCOS
  */
 
@@ -20,7 +20,7 @@ const {
     writeNecessaryConfig
 } = require('./utils/index')
 const inquirer = require('inquirer')
-const { syncLocalFiles, syncRemoteFiles } = require('./utils/core')
+
 
 // 选项配置
 program
@@ -31,6 +31,12 @@ program
     .command('list')
     .description('展示所有的配置信息')
     .action(async () => {
+        // 检验是否已创建配置文件目录
+        const checkResult = checkConfigurationRoot();
+        if (!checkResult) {
+            console.log('请先初始化')
+            return
+        }
         const config = await configFileParse()
         console.log(JSON.stringify(config))
     })
@@ -40,6 +46,12 @@ program
     .command('config <parameter> <value>')
     .description('配置COS')
     .action(async (parameter, value) => {
+        // 检验是否已创建配置文件目录
+        const checkResult = checkConfigurationRoot();
+        if (!checkResult) {
+            console.log('请先初始化')
+            return
+        }
         try {
             const result = writeNecessaryConfig(parameter, value)
             if (result) {
@@ -55,10 +67,21 @@ program
     .command('sync')
     .description('同步本地文件到TencentCOS')
     .action(async () => {
+        // 检验是否已创建配置文件目录
+        const result = checkConfigurationRoot();
+        if (!result) {
+            console.log('请先初始化')
+            return
+        }
+        const { syncLocalFiles } = require('./utils/core')
         const checkResult = await checkConfigFile()
         if (!checkResult) {
             console.log('必填配置信息为空，请使用tx -h来获取帮助信息')
             return
+        }
+        const uploadResult = await syncLocalFiles()
+        if (uploadResult && uploadResult.length) {
+            console.log(`共同步${uploadResult.length}个文件至TencentCOS`);
         }
     })
 
@@ -67,6 +90,13 @@ program
     .command('sync-remote')
     .description('拉取TencentCOS到本地')
     .action(async () => {
+        // 检验是否已创建配置文件目录
+        const result = checkConfigurationRoot();
+        if (!result) {
+            console.log('请先初始化')
+            return
+        }
+        const { syncRemoteFiles } = require('./utils/core')
         const checkResult = await checkConfigFile()
         if (!checkResult) {
             console.log('必填配置信息为空，请使用tx -h来获取帮助信息')
@@ -79,7 +109,7 @@ program
             message: '同步远程COS至本地，可能会造成您修改的文件被还原，是否继续?',
             choices: ['Y', 'N']
         }]).then(async (ans) => {
-            if (ans.choice === 'N')  {
+            if (ans.choice === 'N') {
                 return
             }
             // 继续拉取远端文件
@@ -111,5 +141,4 @@ program
             console.log('发生未知错误，请联系开发者', error);
         }
     })
-
 program.parse()

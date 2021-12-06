@@ -5,14 +5,44 @@
 * sync files to Tencent COS tools
 * sync Tencent COS files to local device
 
-## How to install
+## How to install with npm
 
-* `npm install tx -g`
+```bash
+npm install transmission
+tx -h
+```
+
+## Local install and use, follow under five steps
+
+```bash
+git clone https://github.com/SecretCastle/transmission.git
+cd transmission
+npm install
+npm link
+tx -h
+```
 
 ## Core step
 
-* `tx init` init `tx` in your project root
-* `tx config <parameter> <value>` to set Tencent COS `SecretId` , `SecretKey`,`Region`
+* init tx
+
+```bash
+cd projectRoot
+tx init
+```
+
+* config tx
+
+```bash
+cd projectRoot
+tx config <[SecretId|SecretKey|Bucket|Region|StorageClass]> <value>
+```
+
+Default value:
+
+`Region`: `ap-nanjing`
+
+`StorageClass`: `STANDARD_IA`
 
 
 

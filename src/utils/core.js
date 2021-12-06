@@ -2,7 +2,7 @@
  * @author SecretCastle
  * @email henrychen9314@gmail.com
  * @create date 2021-12-05 18:09:28
- * @modify date 2021-12-06 23:33:54
+ * @modify date 2021-12-06 23:44:47
  * @desc 上传和同步
  */
 
@@ -44,9 +44,16 @@ const getObject = async (obj, downloadPath) => {
     })
 }
 
+/**
+ * 上传文件
+ * @param {*} obj 
+ * @returns 
+ */
 const putObject = async (obj) => {
+    // 获取本地配置
     const config = await configFileParse()
     return new Promise((resolve, reject) => {
+        // 调用SDK putObject
         cos.putObject({
             Bucket: config.Bucket,
             Region: config.Region,
@@ -92,10 +99,11 @@ const mkDirsSync = (dirname) => {
 const downloadOrUploadFile = (list, type) => {
     if (!list) return
     return new Promise((resolve, reject) => {
-        // 暂时先一个个文件下载, 使用reduce + promise
         const data = []
+        // 暂时先一个个文件下载, 使用reduce + promise
         const result = list.reduce((prePromise, cur) => {
             return prePromise.then(() => {
+                // 下载
                 if (type === 1) {
                     // 下载路径
                     const downloadPath = path.resolve(process.cwd(), cur.Key)
@@ -113,7 +121,9 @@ const downloadOrUploadFile = (list, type) => {
                             data.push(Object.assign({}, cur, { isSuccess: true }))
                         }
                     })
-                } else {
+                } 
+                // 上传
+                else {
                     // 上传文件
                     return putObject(cur).then(result => {
                         if (result) {
@@ -141,6 +151,8 @@ const flattenFolderFiles = () => {
             let flattenArr = []
             // 获取当前目录下的所有文件和文件夹
             const fList = fs.readdirSync(rootPath)
+            // 递归获取拍平数据
+            // TODO 优化代码
             const loopFile = (list, root) => {
                 for (let i = 0; i < list.length; i++) {
                     const item = list[i]
@@ -162,6 +174,7 @@ const flattenFolderFiles = () => {
                     }
                 }
             }
+            // 递归入口
             loopFile(fList, rootPath)
             resolve(flattenArr)
         } catch (error) {
@@ -180,6 +193,7 @@ const syncLocalFiles = async () => {
     try {
         // 递归遍历当前文件夹下的所有文件，并拍平成一维数组
         const flattenList = await flattenFolderFiles()
+        // 上传操作，等待返回
         const result = await downloadOrUploadFile(flattenList, 2)
         return Promise.resolve(result)
     } catch (error) {
@@ -195,6 +209,7 @@ const syncRemoteFiles = async () => {
     if (!cos) return
     const config = await configFileParse()
     return new Promise((resolve, reject) => {
+        // 获取Bucket中的所有文件list
         cos.getBucket({
             Bucket: config.Bucket,
             Region: config.Region
@@ -204,7 +219,6 @@ const syncRemoteFiles = async () => {
                 if (data.statusCode === 200) {
                     // 获取文件列表
                     const contents = data.Contents
-                    // 暂时写到当前的目录,不区分文件夹
                     // 调用下载文件和写入文件
                     const result = await downloadOrUploadFile(contents, 1);
                     resolve(result)

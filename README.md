@@ -1,5 +1,7 @@
 # Transmission
 
+`Node`version must upper `v14.14.0`
+
 ## What's this
 
 * sync files to Tencent COS tools

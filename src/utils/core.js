@@ -2,7 +2,7 @@
  * @author SecretCastle
  * @email henrychen9314@gmail.com
  * @create date 2021-12-05 18:09:28
- * @modify date 2021-12-06 23:44:47
+ * @modify date 2021-12-07 22:44:15
  * @desc 上传和同步
  */
 
@@ -168,7 +168,7 @@ const flattenFolderFiles = () => {
                         // 如果是文件则保存
                         flattenArr.push({
                             Key: item,
-                            absolutePath: path.join(root.replace(process.cwd(), ''), item),
+                            absolutePath: path.join(root.replace(process.cwd(), ''), item).split(path.sep).join('/'),
                             fullPath: path.join(root, item)
                         })
                     }

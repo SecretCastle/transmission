@@ -4,7 +4,7 @@
  * @author SecretCastle
  * @email henrychen9314@gmail.com
  * @create date 2021-12-04 22:55:44
- * @modify date 2021-12-06 23:38:26
+ * @modify date 2021-12-10 22:59:02
  * @desc sync files to TencentCOS
  */
 
@@ -82,6 +82,8 @@ program
         const uploadResult = await syncLocalFiles()
         if (uploadResult && uploadResult.length) {
             console.log(`共同步${uploadResult.length}个文件至TencentCOS`);
+        } else {
+            console.log('无可同步文件')
         }
     })
 
@@ -116,6 +118,8 @@ program
             const result = await syncRemoteFiles()
             if (result && result.length) {
                 console.log(`共同步拉取${result.length}个文件`);
+            } else {
+                console.log('无可同步至本地的文件')
             }
         })
     })

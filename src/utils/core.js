@@ -2,7 +2,7 @@
  * @author SecretCastle
  * @email henrychen9314@gmail.com
  * @create date 2021-12-05 18:09:28
- * @modify date 2021-12-07 22:44:15
+ * @modify date 2021-12-10 23:04:55
  * @desc 上传和同步
  */
 
@@ -11,6 +11,7 @@ const fs = require('fs')
 const path = require('path')
 const { configFileParse } = require('./index')
 const { LOOP_IGNORE } = require('../static/common')
+const md5 = require('nodejs-md5')
 let cos
 const initCOS = async () => {
     const config = await configFileParse()
@@ -20,6 +21,27 @@ const initCOS = async () => {
     })
 }
 initCOS()
+
+/**
+ * 计算文件的md5值
+ * @param {*} filePath 文件路径
+ * @returns 
+ */
+const md5File = (filePath) => {
+    return new Promise((resolve, reject) => {
+        md5.file.quiet(filePath, (err, data) => {
+            if (!err) {
+                if (data) {
+                    resolve(data)
+                } else {
+                    reject(false)
+                }
+            } else {
+                reject(err)
+            }
+        })
+    })
+}
 
 /**
  * @description 下载文件
@@ -37,6 +59,30 @@ const getObject = async (obj, downloadPath) => {
         }, (err, data) => {
             if (!err) {
                 resolve(obj)
+            } else {
+                reject(err)
+            }
+        })
+    })
+}
+
+/**
+ * @description 拉取仓库中的文件
+ * @returns
+ */
+const getAllListFromCOS = async () => {
+    const config = await configFileParse()
+    return new Promise((resolve, reject) => {
+        cos.getBucket({
+            Bucket: config.Bucket,
+            Region: config.Region
+        }, (err, data) => {
+            if (!err) {
+                if (data && data.statusCode === 200) {
+                    resolve(data.Contents)
+                } else {
+                    reject(false)
+                }
             } else {
                 reject(err)
             }
@@ -92,17 +138,71 @@ const mkDirsSync = (dirname) => {
 }
 
 /**
+ * 检查文件是否需要上传或更新
+ * @param {*} curFile 本地文件
+ * @returns 
+ */
+const checkNeedUpload = async (curFile) => {
+    // 获取全量列表
+    const fullList = await getAllListFromCOS()
+    return new Promise((resolve, reject) => {
+        // 获取上传对象的md5
+        const md5 = curFile.md5 || ''
+        // 获取上传对象的Key
+        const Key = curFile.absolutePath
+        // 检查是否存在已上传过的Key
+        const hasUploadBefore = fullList.find(file => Key === ('/' + file.Key))
+        if (hasUploadBefore) {
+            // 如果存在，则比较md5
+            const ETag = hasUploadBefore.ETag
+            resolve(`"${md5}"` !== ETag)
+        } else {
+            // 如果不存在，则返回True，可直接上传
+            resolve(true)
+        }
+    })
+}
+
+/**
+ * 检查云端文件是否需要下载到本地
+ * @param {*} curFile 远端文件
+ */
+const checkNeedDownload = async (curFile) => {
+    // 获取本地的全量文件
+    const localFiles = await flattenFolderFiles()
+    return new Promise((resolve, reject) => {
+        // 获取文件md5
+        const md5 = curFile.ETag
+        // 获取文件的Key
+        const Key = '/' + curFile.Key
+        // 检查是否存在相同的文件
+        const hasSameFile = localFiles.find(file => file.absolutePath === Key)
+        if (hasSameFile) {
+            // 如果存在相同的文件，则比较md5，不相同则更新文件
+            const localMd5 = `"${hasSameFile.md5}"`
+            // 如果md5不相同，则同步更新文件
+            resolve(md5 !== localMd5)
+        } else {
+            // 如果不存在文件，则需要下载
+            resolve(true)
+        }
+    })
+}
+
+/**
  * @description 下载/写入文件，并写入
  * @param {*} list 
  * @param {*} type 1 下载 2 上传
  */
-const downloadOrUploadFile = (list, type) => {
+const downloadOrUploadFile = async (list, type) => {
     if (!list) return
+    // 获取全量列表
+    const fullList = await getAllListFromCOS();
     return new Promise((resolve, reject) => {
         const data = []
         // 暂时先一个个文件下载, 使用reduce + promise
         const result = list.reduce((prePromise, cur) => {
-            return prePromise.then(() => {
+            return prePromise.then(async () => {
                 // 下载
                 if (type === 1) {
                     // 下载路径
@@ -115,26 +215,41 @@ const downloadOrUploadFile = (list, type) => {
                         // 递归创建目录
                         mkDirsSync(dir)
                     }
-                    // 下载文件
-                    return getObject(cur, downloadPath).then(result => {
-                        if (result) {
-                            data.push(Object.assign({}, cur, { isSuccess: true }))
-                        }
-                    })
-                } 
+                    const checkNeedDownloadResult = await checkNeedDownload(cur)
+                    if (checkNeedDownloadResult) {
+                        // 如果存在需要下载的文件，则执行下载操作
+                        // 下载文件
+                        return getObject(cur, downloadPath).then(result => {
+                            if (result) {
+                                data.push(Object.assign({}, cur, { isSuccess: true }))
+                            }
+                        })
+                    } else {
+                        return undefined
+                    }
+                }
                 // 上传
                 else {
-                    // 上传文件
-                    return putObject(cur).then(result => {
-                        if (result) {
-                            data.push(Object.assign({}, cur, { isSuccess: true }))
-                        }
-                    })
+                    // 检查是否需要更新
+                    const checkNeedUploadResult = await checkNeedUpload(cur);
+                    if (checkNeedUploadResult) {
+                        // 如果需要上传，则更新或上传文件
+                        // 上传文件
+                        return putObject(cur).then(result => {
+                            if (result) {
+                                data.push(Object.assign({}, cur, { isSuccess: true }))
+                            }
+                        })
+                    } else {
+                        return undefined
+                    }
                 }
             })
         }, Promise.resolve())
         result.then(() => {
             resolve(data)
+        }).catch(err => {
+            reject(err)
         })
     })
 }
@@ -142,45 +257,49 @@ const downloadOrUploadFile = (list, type) => {
 /**
  * @description 递归遍历当前文件夹下的所有文件，并拍平成一维数组
  */
-const flattenFolderFiles = () => {
-    return new Promise((resolve, reject) => {
-        try {
-            // 以当前执行的目录为根目录
-            const rootPath = process.cwd()
-            // 存储的文件
-            let flattenArr = []
-            // 获取当前目录下的所有文件和文件夹
-            const fList = fs.readdirSync(rootPath)
-            // 递归获取拍平数据
-            // TODO 优化代码
-            const loopFile = (list, root) => {
-                for (let i = 0; i < list.length; i++) {
-                    const item = list[i]
-                    // 忽略IGNORE中的文件或文件夹
-                    if (LOOP_IGNORE.includes(item)) continue
-                    // 获取当前路径的文件状态，判断是文件夹还是文件
-                    const fsStat = fs.statSync(path.resolve(root, item))
-                    if (fsStat.isDirectory()) {
-                        // 如果是文件夹则继续递归
-                        const loopList = fs.readdirSync(path.resolve(root, item))
-                        loopFile(loopList, path.resolve(root, item))
-                    } else if (fsStat.isFile()) {
-                        // 如果是文件则保存
-                        flattenArr.push({
-                            Key: item,
-                            absolutePath: path.join(root.replace(process.cwd(), ''), item).split(path.sep).join('/'),
-                            fullPath: path.join(root, item)
-                        })
-                    }
+const flattenFolderFiles = async () => {
+    try {
+        // 以当前执行的目录为根目录
+        const rootPath = process.cwd()
+        // 存储的文件
+        let flattenArr = []
+        // 获取当前目录下的所有文件和文件夹
+        const fList = fs.readdirSync(rootPath)
+        // 递归获取拍平数据
+        const loopFile = async (list, root) => {
+            for (let i = 0; i < list.length; i++) {
+                const item = list[i]
+                // 忽略IGNORE中的文件或文件夹
+                if (LOOP_IGNORE.includes(item)) continue
+                // 获取当前路径的文件状态，判断是文件夹还是文件
+                const fsStat = fs.statSync(path.resolve(root, item))
+                // 判断是否为文件夹
+                if (fsStat.isDirectory()) {
+                    // 如果是文件夹则继续递归
+                    const loopList = fs.readdirSync(path.resolve(root, item))
+                    await loopFile(loopList, path.resolve(root, item))
+                }
+                // 判断是否是文件
+                else if (fsStat.isFile()) {
+                    // 获取上传文件的md5值
+                    const md5 = await md5File(path.join(root, item))
+                    // 如果是文件则保存
+                    flattenArr.push({
+                        Key: item,
+                        md5,
+                        // 如果传入的路径为根路径，则表示，文件处于根路径下，为了方便校验，跟路径文件都加上'/'
+                        absolutePath: root === rootPath ? '/' + item : path.join(root.replace(process.cwd(), ''), item).split(path.sep).join('/'),
+                        fullPath: path.join(root, item)
+                    })
                 }
             }
-            // 递归入口
-            loopFile(fList, rootPath)
-            resolve(flattenArr)
-        } catch (error) {
-            reject(error)
         }
-    })
+        // 递归入口
+        await loopFile(fList, rootPath)
+        return Promise.resolve(flattenArr)
+    } catch (error) {
+        return Promise.reject(error)
+    }
 }
 
 /**
@@ -207,29 +326,15 @@ const syncLocalFiles = async () => {
  */
 const syncRemoteFiles = async () => {
     if (!cos) return
-    const config = await configFileParse()
-    return new Promise((resolve, reject) => {
-        // 获取Bucket中的所有文件list
-        cos.getBucket({
-            Bucket: config.Bucket,
-            Region: config.Region
-        }, async (err, data) => {
-            if (!err) {
-                // 无错，且code为200
-                if (data.statusCode === 200) {
-                    // 获取文件列表
-                    const contents = data.Contents
-                    // 调用下载文件和写入文件
-                    const result = await downloadOrUploadFile(contents, 1);
-                    resolve(result)
-                } else {
-                    reject('拉取远程文件错误!')
-                }
-            } else {
-                reject(err)
-            }
-        })
-    })
+    try {
+        // 获取COS全量数据
+        const fullList = await getAllListFromCOS();
+        // 下载
+        const result = await downloadOrUploadFile(fullList, 1);
+        return Promise.resolve(result)
+    } catch (error) {
+        return Promise.reject(error)
+    }
 }
 
 module.exports = {

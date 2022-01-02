@@ -2,7 +2,7 @@
  * @author SecretCastle
  * @email henrychen9314@gmail.com
  * @create date 2021-12-05 18:09:28
- * @modify date 2022-01-02 22:46:42
+ * @modify date 2022-01-02 23:35:16
  * @desc 上传和同步核心函数
  */
 
@@ -137,7 +137,13 @@ const mkDirsSync = (dirname) => {
     return result
 }
 
-// create mapHandler
+// 
+/**
+ * @description 返回上传和下载的不同请求，用于Promise.all
+ * @param {*} item 上传/下载对象
+ * @param {*} type 1 下载 ｜ 2 上传
+ * @returns 
+ */
 const mapHandler = (item, type) => {
     // 下载
     if (type === 1) {
@@ -193,7 +199,7 @@ const downloadOrUploadFile = async (list, type) => {
 }
 /**
  * @description 拉取仓库中的文件
- * @returns
+ * @returns { fileMap: Map, list: Array }
  */
 const getAllListFromCOS = async () => {
     const config = await configFileParse()
@@ -224,6 +230,7 @@ const getAllListFromCOS = async () => {
 }
 /**
  * @description 递归遍历当前文件夹下的所有文件，并拍平成一维数组
+ * @returns @returns { fileMap: Map, list: Array }
  */
 const flattenFolderFiles = async () => {
     try {

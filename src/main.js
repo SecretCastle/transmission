@@ -4,7 +4,7 @@
  * @author SecretCastle
  * @email henrychen9314@gmail.com
  * @create date 2021-12-04 22:55:44
- * @modify date 2021-12-10 22:59:02
+ * @modify date 2022-01-02 22:40:06
  * @desc sync files to TencentCOS
  */
 
@@ -20,8 +20,8 @@ const {
     writeNecessaryConfig
 } = require('./utils/index')
 const inquirer = require('inquirer')
-
-
+const { success, warn, error, info } = require('./utils/colorful')
+const ora = require('ora')
 // 选项配置
 program
     .version(package.version)
@@ -34,11 +34,11 @@ program
         // 检验是否已创建配置文件目录
         const checkResult = checkConfigurationRoot();
         if (!checkResult) {
-            console.log('请先初始化')
+            warn('请先初始化')
             return
         }
         const config = await configFileParse()
-        console.log(JSON.stringify(config))
+        info(JSON.stringify(config))
     })
 
 // 配置TencentCOS
@@ -49,16 +49,16 @@ program
         // 检验是否已创建配置文件目录
         const checkResult = checkConfigurationRoot();
         if (!checkResult) {
-            console.log('请先初始化')
+            warn('请先初始化')
             return
         }
         try {
             const result = writeNecessaryConfig(parameter, value)
             if (result) {
-                console.log(`配置成功`)
+                success(`配置成功`)
             }
-        } catch (error) {
-            console.log(error);
+        } catch (err) {
+            error(err);
         }
     })
 
@@ -68,22 +68,29 @@ program
     .description('同步本地文件到TencentCOS')
     .action(async () => {
         // 检验是否已创建配置文件目录
+        const spinner = ora('开始检查配置').start();
         const result = checkConfigurationRoot();
         if (!result) {
-            console.log('请先初始化')
+            spinner.warn('请先初始化')
             return
         }
+        spinner.succeed('检查配置成功')
         const { syncLocalFiles } = require('./utils/core')
         const checkResult = await checkConfigFile()
         if (!checkResult) {
-            console.log('必填配置信息为空，请使用tx -h来获取帮助信息')
+            warn('必填配置信息为空，请使用tx -h来获取帮助信息')
             return
         }
-        const uploadResult = await syncLocalFiles()
-        if (uploadResult && uploadResult.length) {
-            console.log(`共同步${uploadResult.length}个文件至TencentCOS`);
-        } else {
-            console.log('无可同步文件')
+        try {
+            spinner.start('开始同步文件')
+            const uploadCount = await syncLocalFiles()
+            if (uploadCount) {
+                spinner.succeed(`共同步${uploadCount}个文件至TencentCOS`)
+            } else {
+                spinner.warn('无可同步文件')
+            }
+        } catch (error) {
+            spinner.fail('发生错误')
         }
     })
 
@@ -92,18 +99,6 @@ program
     .command('sync-remote')
     .description('拉取TencentCOS到本地')
     .action(async () => {
-        // 检验是否已创建配置文件目录
-        const result = checkConfigurationRoot();
-        if (!result) {
-            console.log('请先初始化')
-            return
-        }
-        const { syncRemoteFiles } = require('./utils/core')
-        const checkResult = await checkConfigFile()
-        if (!checkResult) {
-            console.log('必填配置信息为空，请使用tx -h来获取帮助信息')
-            return
-        }
         // 对于拉去远端COS的文件，可能会存在覆盖原有的已编辑的文件，给出告警
         inquirer.prompt([{
             type: 'list',
@@ -114,12 +109,31 @@ program
             if (ans.choice === 'N') {
                 return
             }
-            // 继续拉取远端文件
-            const result = await syncRemoteFiles()
-            if (result && result.length) {
-                console.log(`共同步拉取${result.length}个文件`);
-            } else {
-                console.log('无可同步至本地的文件')
+            const spinner = ora('开始检查配置').start();
+            // 检验是否已创建配置文件目录
+            const result = checkConfigurationRoot();
+            if (!result) {
+                warn('请先初始化')
+                return
+            }
+            spinner.succeed('检查配置成功')
+            const { syncRemoteFiles } = require('./utils/core')
+            const checkResult = await checkConfigFile()
+            if (!checkResult) {
+                warn('必填配置信息为空，请使用tx -h来获取帮助信息')
+                return
+            }
+            try {
+                spinner.start('开始同步文件')
+                // 继续拉取远端文件
+                const downloadCount = await syncRemoteFiles()
+                if (downloadCount) {
+                    spinner.succeed(`共同步拉取${downloadCount}个文件`)
+                } else {
+                    spinner.warn('无可同步至本地的文件')
+                }
+            } catch (error) {
+                spinner.fail('发生错误')
             }
         })
     })
@@ -137,12 +151,12 @@ program
                 await createConfigurationFolder()
                 // 创建配置文件
                 await createConfigurationFile();
-                console.log('初始化完成');
+                success('初始化完成');
             } else {
-                console.log('请勿重复初始化')
+                warn('请勿重复初始化')
             }
-        } catch (error) {
-            console.log('发生未知错误，请联系开发者', error);
+        } catch (err) {
+            error('发生未知错误，请联系开发者', err);
         }
     })
 program.parse()

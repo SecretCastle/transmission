@@ -2,7 +2,7 @@
  * @author SecretCastle
  * @email henrychen9314@gmail.com
  * @create date 2021-12-04 23:03:49
- * @modify date 2021-12-06 23:02:38
+ * @modify date 2021-12-31 21:55:17
  * @desc 静态常量存储
  */
 
@@ -37,13 +37,21 @@ Region=ap-nanjing
 # 存储类型，默认低频存储
 StorageClass=STANDARD_IA
 `
-
+/**
+ * 上传忽略的隐藏文件
+ */
 const LOOP_IGNORE = ['.tx', '.DS_Store', '.markeditor', '.Archive']
+
+/**
+ * 并行数
+ */
+const MULTI_UPLOADS_COUNT = 10
 
 module.exports = {
     CONFIG_PARAMETERS,
     LOCAL_CACHE_FOLDER_NAME,
     LOCAL_CACHE_CONFIG_FILE_NAME,
     defaultConfigFileContent,
-    LOOP_IGNORE
+    LOOP_IGNORE,
+    MULTI_UPLOADS_COUNT
 }

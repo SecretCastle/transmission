@@ -2,8 +2,8 @@
  * @author SecretCastle
  * @email henrychen9314@gmail.com
  * @create date 2021-12-05 17:28:33
- * @modify date 2021-12-06 23:34:49
- * @desc [description]
+ * @modify date 2022-01-02 22:32:30
+ * @desc 检查环境/配置/创建配置/读取配置等操作
  */
 const path = require('path')
 const fs = require('fs')

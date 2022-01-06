@@ -45,7 +45,8 @@ const md5File = (filePath) => {
 
 /**
  * @description 下载文件
- * @param {*} obj 
+ * @param {*} obj 下载文件对象
+ * @param {*} downloadPath 文件路径
  * @returns 
  */
 const getObject = async (obj, downloadPath) => {
@@ -56,7 +57,7 @@ const getObject = async (obj, downloadPath) => {
             Region: config.Region,
             Key: obj.Key,
             Output: fs.createWriteStream(downloadPath)
-        }, (err, data) => {
+        }, (err) => {
             if (!err) {
                 resolve(obj)
             } else {
@@ -115,22 +116,21 @@ const mkDirsSync = (dirname) => {
 
 /**
  * @description 切割数组, 返回一个数组，数组中包含的是以MULTI_UPLOADS_COUNT为长度的数组，用于同时批量上传/批量下载
- * @param {*} list 需要操作的对象 
- * @param {*} type 1 下载 ｜ 2 上传
+ * @param {*} list 需要操作的对象
  * @return result 切割的数组
  */
  const chunk = (list) => {
-    const result = new Array()
+    const result = []
     const len = list.length
     if (len < MULTI_UPLOADS_COUNT || MULTI_UPLOADS_COUNT < 1) {
         return new Array(list)
     }
     // 取最大切割次数
-    var k = Math.ceil(len / MULTI_UPLOADS_COUNT)
-    var j = 0
+    let k = Math.ceil(len / MULTI_UPLOADS_COUNT)
+    let j = 0
     while (j < k) {
         // 使用Array.prototype.slice
-        var splice = list.splice(0, MULTI_UPLOADS_COUNT)
+        const splice = list.splice(0, MULTI_UPLOADS_COUNT)
         result.push(splice)
         j++
     }
@@ -218,7 +218,7 @@ const getAllListFromCOS = async () => {
                     contents && contents.forEach((content) => {
                         fileMap.set('/' + content.Key, content)
                     })
-                    resolve({ fileMap, list: contents })
+                    resolve({ fileMap: fileMap, list: contents })
                 } else {
                     reject(false)
                 }
@@ -352,7 +352,7 @@ const getNeedUploadOrDownloadFiles = async (type) => {
 const syncLocalFiles = async () => {
     // 测试
     if (!cos) return
-    const config = await configFileParse()
+    // const config = await configFileParse()
     try {
         // 获取需要上传的文件列表 v1.0.2
         const fullList = await getNeedUploadOrDownloadFiles(2)

@@ -71,7 +71,6 @@ const createConfigurationFile = () => {
 
 /**
  * @description 配置文件的解析
- * @param {*} path 
  * @returns 
  */
 const configFileParse = async () => {
@@ -85,7 +84,7 @@ const configFileParse = async () => {
         // 读取文件
         const fileBodyData = fs.createReadStream(filePath)
         // 逐行读取配置文件信息
-        rl = readline.createInterface({
+        const rl = readline.createInterface({
             input: fileBodyData,
             crlfDelay: Infinity
         })
@@ -112,10 +111,7 @@ const configFileParse = async () => {
 const checkConfigFile = async () => {
     const config = await configFileParse()
     // 如果必填配置为空，则抛出异常
-    if (!config[CONFIG_PARAMETERS[0]] || !config[CONFIG_PARAMETERS[1]] || !config[CONFIG_PARAMETERS[2]]) {
-        return false
-    }
-    return true;
+    return !(!config[CONFIG_PARAMETERS[0]] || !config[CONFIG_PARAMETERS[1]] || !config[CONFIG_PARAMETERS[2]]);
 }
 
 /**
@@ -140,7 +136,7 @@ const writeNecessaryConfig = async (parameter, value) => {
         // 获取fs的写入流
         const fsWriteStream = fs.createWriteStream(filePath + '_cache')
         // 逐行读取配置文件信息
-        rl = readline.createInterface({
+        const rl = readline.createInterface({
             input: fsReadStream,
             crlfDelay: Infinity
         })

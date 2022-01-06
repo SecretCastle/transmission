@@ -13,7 +13,7 @@ const colors = require('colors/safe')
  * @param {*} result 
  * @param {*} bold 是否加粗显示
  */
-const success = (result, bold) => {
+const success = (result, bold = false) => {
     if (bold) {
         console.log(colors.green.bold(result))
     } else {
@@ -26,7 +26,7 @@ const success = (result, bold) => {
  * @param {*} result 
  * @param {*} bold 是否加粗显示
  */
-const warn = (result, bold) => {
+const warn = (result, bold = false) => {
     if (bold) {
         console.log(colors.yellow.bold(result))
     } else {
@@ -39,7 +39,7 @@ const warn = (result, bold) => {
  * @param {*} result 
  * @param {*} bold 是否加粗显示
  */
-const error = (result, bold) => {
+const error = (result, bold = false) => {
     if (bold) {
         console.log(colors.red.bold(result))
     } else {
@@ -52,7 +52,7 @@ const error = (result, bold) => {
  * @param {*} result 
  * @param {*} bold 是否加粗显示
  */
- const info = (result, bold) => {
+ const info = (result, bold = false) => {
     if (bold) {
         console.log(colors.yellow.bold(result))
     } else {

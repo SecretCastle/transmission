@@ -4,11 +4,11 @@
  * @author SecretCastle
  * @email henrychen9314@gmail.com
  * @create date 2021-12-04 22:55:44
- * @modify date 2022-01-02 22:40:06
+ * @modify date 2022-01-06 23:42:12
  * @desc sync files to TencentCOS
  */
 
-const package = require('../package.json')
+const packagePkg = require('../package.json')
 const { Command } = require('commander')
 const program = new Command();
 const {
@@ -24,7 +24,7 @@ const { success, warn, error, info } = require('./utils/colorful')
 const ora = require('ora')
 // 选项配置
 program
-    .version(package.version)
+    .version(packagePkg.version)
 
 // 展示所有的配置信息
 program
